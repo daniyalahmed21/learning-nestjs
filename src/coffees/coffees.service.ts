@@ -1,35 +1,33 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Coffee } from './entities/coffee.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class CoffeesService {
-    private coffees: Coffee[] = [
-        {
-            id: 1,
-            name: 'Shipwreck Roast',
-            brand: 'Buddy Brew',
-            flavors: ['chocolate', 'vanilla']
-        }
-    ];
+    constructor(
+        @InjectRepository(Coffee)
+        private readonly coffeeRepository: Repository<Coffee>,
+    ) { }
 
-    findAll(): Coffee[] {
-        return this.coffees;
+    async findAll() {
+        return await this.coffeeRepository.find();
     }
 
-    findOne(id: string) {
-        const existingCoffee = this.coffees.find(coffee => coffee.id === +id);
+    async findOne(id: string) {
+        const existingCoffee = await this.coffeeRepository.findOne({ where: { id: +id } });
         if (!existingCoffee) {
             throw new HttpException(`Coffee ${id} not found`, HttpStatus.NOT_FOUND);
         }
         return existingCoffee;
     }
 
-    create(createCoffeeDto) {
-        return this.coffees.push(createCoffeeDto)
+    async create(createCoffeeDto) {
+        return await this.coffeeRepository.save(createCoffeeDto)
     }
 
-    update(id: string, updateCoffeeDto) {
-        const existingCoffee = this.findOne(id);
+    async update(id: string, updateCoffeeDto) {
+        const existingCoffee = await this.findOne(id);
         if (!existingCoffee) {
             throw new HttpException(`Coffee not ${id} found`, HttpStatus.NOT_FOUND);
         }
@@ -37,9 +35,11 @@ export class CoffeesService {
         return existingCoffee;
     }
 
-    remove(id: string) {
-        this.coffees = this.coffees.filter(coffee => coffee.id !== +id);
+    async remove(id: string) {
+        const existingCoffee = await this.findOne(id);
+        if (!existingCoffee) {
+            throw new HttpException(`Coffee not ${id} found`, HttpStatus.NOT_FOUND);
+        }
+        return await this.coffeeRepository.remove(existingCoffee);
     }
-
-
 }
